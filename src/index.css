@@ -1,0 +1,16 @@
+html, body {
+  height: 100%; /* Asegura que html y body ocupen toda la altura */
+  margin: 0; /* Elimina márgenes por defecto */
+  background-color: #636e72;
+  color: white;
+}
+
+.min-vh-100 {
+  min-height: 100vh; /* Asegura que el contenedor principal ocupe al menos la altura completa de la ventana */
+}
+.flex-grow-1 {
+  flex-grow: 1; /* Permite que el contenido principal ocupe el espacio restante */
+}
+.sideBar-bg{
+  background-color: #454545;
+}
