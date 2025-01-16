@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 
-const API = 'http://localhost/pedidos/api/productos/getProductos.php';
+const API = 'http://localhost/pedidos/pedidosback/api/productos/getProductos.php';
 
 const Inicio = () => {
     const [datos, setDatos] = useState([]);
@@ -38,7 +38,7 @@ const Inicio = () => {
                                         
                                     </>
                                 } 
-                                header={<img alt={item.nombre} src={item.foto} />} // Mueve aquí la imagen
+                                header={<img alt={item.nombre} src={item.miniatura} />} // Mueve aquí la imagen
                                 className="md:w-25rem m-1 "
                                 heigth="100"
                             >

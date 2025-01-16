@@ -12,15 +12,15 @@ import { InputIcon } from 'primereact/inputicon';
 import { Toast } from 'bootstrap';
 
 
-const API = "http://localhost/pedidos/api/productos/getProductos.php"
+const API = "http://localhost/pedidos/pedidosback/api/productos/getProductos.php"
 
 const Inventario = () => {
     const [productos, setProductos] = useState([]);
-    const [alumno, setAlumno] = useState({ nombre: '', cédula: '', teléfono: '' });
+    const [producto, setProducto] = useState({ nombre: '', cédula: '', teléfono: '' });
     const [visible, setVisible] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
-    const [alumnoToDelete, setAlumnoToDelete] = useState(null);
+    const [productoToDelete, setProductoToDelete] = useState(null);
     const toast = useRef(null);
 
     useEffect(() => {
@@ -89,7 +89,7 @@ const Inventario = () => {
             <div className='container p-2'>
                 <Button icon="pi pi-plus" label="Agregar un producto nuevo" className='p-button-success' />
                 <div className="card bg-dark text-white ">
-                    <DataTable value={productos} filters={filters} header={header} footer={footer} paginator rows={10} rowsPerPageOptions={[5, 10, 25, 50]} tableStyle={{ minWidth: '50rem' }}>
+                    <DataTable value={productos} filters={filters} header={header} footer={footer} paginator rows={5} rowsPerPageOptions={[5, 10, 25, 50]} tableStyle={{ minWidth: '50rem' }}>
                         <Column field="id" sortable header="#"></Column>
                         <Column field="nombre" sortable header="Nombre"></Column>
                         <Column field="foto" sortable header="Imagen"></Column>

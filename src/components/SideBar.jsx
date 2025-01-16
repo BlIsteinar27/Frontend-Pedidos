@@ -25,16 +25,7 @@ const SideBar = () => {
                             <GiNotebook className='icon me-2' />Inventario
                         </Link>
                     </li>
-                    <li>
-                        <Link to="/sedes" href="#" className="nav-link text-white">
-                            <FaMapMarkerAlt className='icon me-2' />Sedes
-                        </Link>
-                    </li>
-                    <li>
-                        <Link to="/alumnos" href="#" className="nav-link text-white">
-                            <FaUserAlt className='icon me-2' />Alumnos
-                        </Link>
-                    </li>
+                    
                 </ul>
                 <Button className="p-button-primary mt-2 text-center" href="#" onClick={handleShow}>
                     <i className='pi pi-user me-2'></i>Iniciar sesión
