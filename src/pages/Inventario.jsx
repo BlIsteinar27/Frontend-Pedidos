@@ -3,15 +3,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
-import { Tag } from 'primereact/tag';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode } from 'primereact/api';
 import { IconField } from 'primereact/iconfield';
 import { InputIcon } from 'primereact/inputicon';
-import { Rating } from 'primereact/rating';
 import { Toast } from 'primereact/toast';
-import { FileUpload } from 'primereact/fileupload';
+
 
 const API = "http://localhost/pedidos/pedidosback/api/productos/getProductos.php"
 
@@ -24,7 +22,6 @@ const Inventario = () => {
     const [productoToDelete, setProductoToDelete] = useState(null);
     const toast = useRef(null);
     const [file, setFile] = useState(null); // Estado para almacenar el archivo seleccionado
-
     const POST_API = 'http://localhost/pedidos/pedidosback/api/productos/postProducto.php';
 
     useEffect(() => {
@@ -47,84 +44,71 @@ const Inventario = () => {
         setFilters(_filters);
         setGlobalFilterValue(value);
     };
-    const onUpload = () => {
-        toast.current.show({ severity: 'info', summary: 'Success', detail: 'File Uploaded' });
-    };
     const imageBodyTemplate = (product) => {
         return <img src={`${product.miniatura}`} alt="foto" className="w-6rem shadow-2 border-round" />;
     };
-    const statusBodyTemplate = (product) => {
-        return <Tag value={product.inventoryStatus} severity={getSeverity(product)}></Tag>;
-    };
-    const getSeverity = (product) => {
-        switch (product.inventoryStatus) {
-            case 'INSTOCK':
-                return 'success';
-
-            case 'LOWSTOCK':
-                return 'warning';
-
-            case 'OUTOFSTOCK':
-                return 'danger';
-
-            default:
-                return null;
-        }
-    };
     const openNew = () => {
         setProducto({ nombre: '', categoria: '', precio: '', descuento: '', rating: '', stock: '', marca: '' });
-        setIsEditing(false);
+        setFile({}); // Reiniciar el archivo seleccionado al abrir el diálogo
         setVisible(true);
-        setFile(null); // Reiniciar el archivo seleccionado al abrir el diálogo
     };
+
     // Función para manejar el clic en el botón
-    const saveProducto = async (event) => {
+
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        const method = 'POST';
-        const url = POST_API;
     
-        // Verificar que se haya seleccionado un archivo
+        console.log("Archivo a enviar:", file); // Verifica qué archivo se está enviando
+    
         if (!file) {
-            if (toast.current) {
-                toast.current.show({ severity: 'error', summary: 'Error', detail: 'Por favor selecciona una imagen.', life: 3000 });
-            }
-            return; // Salir si no hay archivo
+            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Por favor selecciona una imagen.', life: 3000 });
+            return;
         }
     
         // Crear un objeto FormData
         const formData = new FormData();
-        formData.append('miniatura', file); // Agregar el archivo al FormData
+        formData.append('miniatura', file); // Agregar el archivo de imagen
     
-        // Agregar otros campos al FormData
-        for (const key in producto) {
-            formData.append(key, producto[key]);
+        // Agregar los demás campos del producto al FormData
+        Object.entries(producto).forEach(([key, value]) => {
+            formData.append(key, value);
+        });
+    
+        // Mostrar los valores de FormData en la consola
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}:`, value);
         }
     
         try {
-            const response = await fetch(url, {
-                method: method,
-                body: formData, // Enviar el FormData sin establecer 'Content-Type'
+            // Realizar la solicitud POST al backend
+            const response = await fetch(POST_API, {
+                method: 'POST',
+                body: formData,
             });
     
-            const result = await response.json();
-            console.log(result); // Verifica la respuesta del servidor
+            const textResponse = await response.text(); // Obtener la respuesta como texto
+            console.log("Respuesta del servidor:", textResponse); // Imprimir respuesta en consola
+    
+            let result;
+            try {
+                result = JSON.parse(textResponse); // Intentar analizar como JSON
+            } catch (error) {
+                console.error("Error al analizar JSON:", error);
+                console.error("Respuesta cruda del servidor:", textResponse); // Imprimir respuesta cruda para diagnóstico
+                toast.current.show({ severity: 'error', summary: 'Error', detail: 'Respuesta no válida del servidor.', life: 3000 });
+                return;
+            }
     
             if (response.ok) {
-                if (toast.current) {
-                    toast.current.show({ severity: 'success', summary: 'Éxito', detail: `Producto inscrito correctamente.`, life: 3000 });
-                }
-                setVisible(false);
-                fetchProductos(); // Actualiza la lista de productos
+                toast.current.show({ severity: 'success', summary: 'Éxito', detail: result.message || 'Producto inscrito correctamente.', life: 3000 });
+                setVisible(false); // Cerrar el diálogo
+                fetchProductos(); // Actualizar la lista de productos
             } else {
-                if (toast.current) {
-                    toast.current.show({ severity: 'error', summary: 'Error', detail: result.message || 'Error desconocido', life: 3000 });
-                }
+                toast.current.show({ severity: 'error', summary: 'Error', detail: result.message || 'Error desconocido', life: 3000 });
             }
         } catch (error) {
             console.error('Error al enviar los datos:', error);
-            if (toast.current) {
-                toast.current.show({ severity: 'error', summary: 'Error', detail: 'Error al enviar los datos.', life: 3000 });
-            }
+            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Error al enviar los datos.', life: 3000 });
         }
     };
     
@@ -132,10 +116,31 @@ const Inventario = () => {
         console.log("Editar producto:", producto);
         // Aquí puedes implementar la lógica para editar el curso
     };
+    const confirmDelete = (id) => {
+        setProductoToDelete(id);
+        setConfirmDeleteVisible(true);
+    };
+    const deleteProducto = async () => {
+        try {
+            const response = await fetch(`http://localhost/pedidos/pedidosback/api/productos/deleteProducto.php?id=${productoToDelete}`, {
+                method: 'DELETE',
+            });
 
-    const handleEliminarProducto = (producto) => {
-        console.log("Eliminar Producto:", producto);
-        // Aquí puedes implementar la lógica para eliminar el curso
+            const result = await response.json();
+
+            if (response.ok) {
+                toast.current.show({ severity: 'success', summary: 'Éxito', detail: 'Producto eliminado correctamente.', life: 3000 });
+                fetchProductos();
+            } else {
+                toast.current.show({ severity: 'error', summary: 'Error', detail: result.message || 'Error desconocido', life: 3000 });
+            }
+        } catch (error) {
+            console.error('Error al eliminar el Producto:', error);
+            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Error al eliminar el producto.', life: 3000 });
+        } finally {
+            setConfirmDeleteVisible(false);
+            setProductoToDelete(null);
+        }
     };
     const header = (
         <div className="flex flex-wrap align-items-center justify-content-between gap-2">
@@ -148,7 +153,7 @@ const Inventario = () => {
     const footerForm = (
         <div>
             <Button label="Cancelar" icon="pi pi-times p-button-danger" onClick={() => setVisible(false)} />
-            <Button label="Agregar" icon="pi pi-check p-button-success" onClick={saveProducto} />
+            <Button label="Agregar" icon="pi pi-check p-button-success" onClick={handleSubmit} />
         </div>
     );
     return (
@@ -185,7 +190,7 @@ const Inventario = () => {
                                 />
                                 <Button
                                     icon="pi pi-trash"
-                                    onClick={() => handleEliminarProducto(rowData.id)}
+                                    onClick={() => confirmDelete(rowData.id)}
                                     className="p-button-danger" // Botón rojo para eliminar
                                 />
                             </div>
@@ -193,7 +198,7 @@ const Inventario = () => {
                     </DataTable>
 
                     <Dialog header="Editar producto" visible={visible} footer={footerForm} onHide={() => setVisible(false)} style={{ width: '50vw' }}>
-                        <form className="p-fluid">
+                        <form className="p-fluid" onSubmit={handleSubmit}>
                             <div className="mb-3">
                                 <label htmlFor="nombre" className="form-label">Nombre del producto</label>
                                 <InputText
@@ -202,6 +207,7 @@ const Inventario = () => {
                                     className="w-full"
                                     value={producto.nombre}
                                     onChange={(e) => setProducto({ ...producto, nombre: e.target.value })}
+                                    required
                                 />
                             </div>
                             <div className="mb-3">
@@ -212,6 +218,7 @@ const Inventario = () => {
                                     className="w-full"
                                     value={producto.categoria}
                                     onChange={(e) => setProducto({ ...producto, categoria: e.target.value })}
+                                    required
                                 />
                             </div>
                             <div className="mb-3">
@@ -222,6 +229,7 @@ const Inventario = () => {
                                     className="w-full"
                                     value={producto.precio}
                                     onChange={(e) => setProducto({ ...producto, precio: e.target.value })}
+                                    required
                                 />
                             </div>
                             <div className="mb-3">
@@ -232,6 +240,7 @@ const Inventario = () => {
                                     className="w-full"
                                     value={producto.descuento}
                                     onChange={(e) => setProducto({ ...producto, descuento: e.target.value })}
+                                    required
                                 />
                             </div>
                             <div className="mb-3">
@@ -252,6 +261,7 @@ const Inventario = () => {
                                     className="w-full"
                                     value={producto.stock}
                                     onChange={(e) => setProducto({ ...producto, stock: e.target.value })}
+                                    required
                                 />
                             </div>
                             <div className="mb-3">
@@ -262,28 +272,39 @@ const Inventario = () => {
                                     className="w-full"
                                     value={producto.marca}
                                     onChange={(e) => setProducto({ ...producto, marca: e.target.value })}
+                                    required
                                 />
                             </div>
                             <div className='mb-3'>
-                                <label htmlFor='miniatura' className='form-label'>Miniatura del Producto</label>
-                                <FileUpload
-                                    name='miniatura' // Este nombre debe coincidir con lo que espera el backend
-                                    accept='image/*'
-                                    maxFileSize={1000000}
-                                    mode='basic'
-                                    customUpload
-                                    onUpload={(event) => {
-                                        // Asegúrate de que esto esté configurado correctamente
-                                        setFile(event.files[0]); // Almacena el primer archivo seleccionado en el estado
-                                        console.log(event.files[0]); // Verifica si se está seleccionando correctamente
+                                <label htmlFor="imagen" className="form-label">Selecciona una imagen</label>
+                                <input
+                                    type="file"
+                                    id="imagen"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        if (e.target.files.length > 0) {
+                                            setFile(e.target.files[0]); // Establecer el archivo seleccionado en el estado
+                                            toast.current.show({ severity: 'info', summary: 'Éxito', detail: 'Archivo cargado correctamente.' });
+                                        }
                                     }}
+                                    required
                                 />
-
                             </div>
+
+                            {/* Botón para agregar producto */}
+                            <Button type="submit" label="Agregar Producto" className='p-button-success' />
+
                         </form>
                     </Dialog>
 
-
+                    <Dialog header="Confirmar Eliminación" visible={confirmDeleteVisible} footer={
+                        <div>
+                            <Button label="No" icon="pi pi-times" onClick={() => setConfirmDeleteVisible(false)} />
+                            <Button label="Sí" icon="pi pi-check" onClick={deleteProducto} />
+                        </div>
+                    } onHide={() => setConfirmDeleteVisible(false)}>
+                        <p>¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.</p>
+                    </Dialog>
                 </div>
             </div>
         </>

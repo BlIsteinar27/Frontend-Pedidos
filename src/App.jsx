@@ -7,6 +7,7 @@ import Footer from './components/Footer'
 import SideBar from './components/SideBar'
 import Inventario from './pages/Inventario'
 
+
 function App() {
 
 
@@ -20,8 +21,8 @@ function App() {
             <div className="col"> {/* Contenido principal */}
               <Routes>
                 <Route path="/" element={<Inicio />} />
-                <Route path="/inicio" element={<Inicio />} /> 
-                <Route path="/inventario" element={<Inventario />} /> 
+                <Route path="/inicio" element={<Inicio />} />
+                <Route path="/inventario" element={<Inventario />} />
                 <Route path="*" element={<Inicio />} />
               </Routes>
             </div>
