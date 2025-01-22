@@ -21,7 +21,8 @@ const Inventario = () => {
     const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
     const [productoToDelete, setProductoToDelete] = useState(null);
     const toast = useRef(null);
-    const [file, setFile] = useState(null); // Estado para almacenar el archivo seleccionado
+    const [imagen, setImagen] = useState(null); // Manejar una sola imagen
+
     const POST_API = 'http://localhost/pedidos/pedidosback/api/productos/postProducto.php';
 
     useEffect(() => {
@@ -49,69 +50,61 @@ const Inventario = () => {
     };
     const openNew = () => {
         setProducto({ nombre: '', categoria: '', precio: '', descuento: '', rating: '', stock: '', marca: '' });
-        setFile({}); // Reiniciar el archivo seleccionado al abrir el diálogo
+        setImagen(null); // Reiniciar el archivo seleccionado al abrir el diálogo
         setVisible(true);
     };
 
     // Función para manejar el clic en el botón
-
-    const handleSubmit = async (event) => {
+    const saveProducto = async (event) => {
         event.preventDefault();
-    
-        console.log("Archivo a enviar:", file); // Verifica qué archivo se está enviando
-    
-        if (!file) {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Por favor selecciona una imagen.', life: 3000 });
-            return;
-        }
-    
-        // Crear un objeto FormData
-        const formData = new FormData();
-        formData.append('miniatura', file); // Agregar el archivo de imagen
-    
-        // Agregar los demás campos del producto al FormData
-        Object.entries(producto).forEach(([key, value]) => {
-            formData.append(key, value);
+        const dataToSend = new FormData();
+
+        // Agregar los datos del producto al objeto FormData
+        Object.keys(producto).forEach(key => {
+            dataToSend.append(key, producto[key]);
         });
-    
+
+        // Agregar la imagen al objeto FormData si existe
+        if (imagen) {
+            dataToSend.append('miniatura', imagen);
+        }
+
         // Mostrar los valores de FormData en la consola
-        for (let [key, value] of formData.entries()) {
+        for (let [key, value] of dataToSend.entries()) {
             console.log(`${key}:`, value);
         }
     
+        const method = 'POST';
+        const url = POST_API;
+    
         try {
-            // Realizar la solicitud POST al backend
-            const response = await fetch(POST_API, {
-                method: 'POST',
-                body: formData,
+            const response = await fetch(url, {
+                method: method,
+                body: dataToSend, // Usar FormData directamente
             });
     
-            const textResponse = await response.text(); // Obtener la respuesta como texto
-            console.log("Respuesta del servidor:", textResponse); // Imprimir respuesta en consola
-    
-            let result;
-            try {
-                result = JSON.parse(textResponse); // Intentar analizar como JSON
-            } catch (error) {
-                console.error("Error al analizar JSON:", error);
-                console.error("Respuesta cruda del servidor:", textResponse); // Imprimir respuesta cruda para diagnóstico
-                toast.current.show({ severity: 'error', summary: 'Error', detail: 'Respuesta no válida del servidor.', life: 3000 });
+            // Verificar si la respuesta fue exitosa
+            if (!response.ok) {
+                const errorResult = await response.json();
+                toast.current.show({ severity: 'error', summary: 'Error', detail: errorResult.message || 'Error desconocido', life: 3000 });
                 return;
             }
-    
-            if (response.ok) {
-                toast.current.show({ severity: 'success', summary: 'Éxito', detail: result.message || 'Producto inscrito correctamente.', life: 3000 });
-                setVisible(false); // Cerrar el diálogo
-                fetchProductos(); // Actualizar la lista de productos
-            } else {
-                toast.current.show({ severity: 'error', summary: 'Error', detail: result.message || 'Error desconocido', life: 3000 });
-            }
+         
+            const result = await response.json();
+       console.log(result);
+            // Mostrar mensaje de éxito
+            toast.current.show({ severity: 'success', summary: 'Éxito', detail: `Producto inscrito correctamente.`, life: 3000 });
+            setVisible(false);
+            fetchProductos();
+            
         } catch (error) {
             console.error('Error al enviar los datos:', error);
             toast.current.show({ severity: 'error', summary: 'Error', detail: 'Error al enviar los datos.', life: 3000 });
         }
     };
     
+
+
     const handleEditarProducto = (producto) => {
         console.log("Editar producto:", producto);
         // Aquí puedes implementar la lógica para editar el curso
@@ -153,7 +146,7 @@ const Inventario = () => {
     const footerForm = (
         <div>
             <Button label="Cancelar" icon="pi pi-times p-button-danger" onClick={() => setVisible(false)} />
-            <Button label="Agregar" icon="pi pi-check p-button-success" onClick={handleSubmit} />
+            <Button label="Agregar" icon="pi pi-check p-button-success" onClick={saveProducto} />
         </div>
     );
     return (
@@ -197,57 +190,48 @@ const Inventario = () => {
                         )}></Column>
                     </DataTable>
 
-                    <Dialog header="Editar producto" visible={visible} footer={footerForm} onHide={() => setVisible(false)} style={{ width: '50vw' }}>
-                        <form className="p-fluid" onSubmit={handleSubmit}>
+                    <Dialog header="Editar Categoria" visible={visible} footer={footerForm} onHide={() => setVisible(false)} style={{ width: '50vw' }}>
+                        <form className="p-fluid">
                             <div className="mb-3">
                                 <label htmlFor="nombre" className="form-label">Nombre del producto</label>
                                 <InputText
                                     id="nombre"
-                                    name="nombre" // Asegúrate de agregar el atributo name
                                     className="w-full"
                                     value={producto.nombre}
                                     onChange={(e) => setProducto({ ...producto, nombre: e.target.value })}
-                                    required
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="categoria" className="form-label">Nombre de la categoria</label>
+                                <label htmlFor="categoria" className="form-label">Categoria del producto</label>
                                 <InputText
                                     id="categoria"
-                                    name="categoria" // Asegúrate de agregar el atributo name
                                     className="w-full"
                                     value={producto.categoria}
                                     onChange={(e) => setProducto({ ...producto, categoria: e.target.value })}
-                                    required
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="precio" className="form-label">Precio</label>
+                                <label htmlFor="precio" className="form-label">Precio del producto</label>
                                 <InputText
                                     id="precio"
-                                    name="precio" // Asegúrate de agregar el atributo name
                                     className="w-full"
                                     value={producto.precio}
                                     onChange={(e) => setProducto({ ...producto, precio: e.target.value })}
-                                    required
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="descuento" className="form-label">Precio con descuento</label>
+                                <label htmlFor="descuento" className="form-label">Descuento del producto</label>
                                 <InputText
                                     id="descuento"
-                                    name="descuento" // Asegúrate de agregar el atributo name
                                     className="w-full"
                                     value={producto.descuento}
                                     onChange={(e) => setProducto({ ...producto, descuento: e.target.value })}
-                                    required
                                 />
                             </div>
                             <div className="mb-3">
                                 <label htmlFor="rating" className="form-label">Rating del producto</label>
                                 <InputText
                                     id="rating"
-                                    name="rating" // Asegúrate de agregar el atributo name
                                     className="w-full"
                                     value={producto.rating}
                                     onChange={(e) => setProducto({ ...producto, rating: e.target.value })}
@@ -257,46 +241,35 @@ const Inventario = () => {
                                 <label htmlFor="stock" className="form-label">Stock</label>
                                 <InputText
                                     id="stock"
-                                    name="stock" // Asegúrate de agregar el atributo name
                                     className="w-full"
                                     value={producto.stock}
                                     onChange={(e) => setProducto({ ...producto, stock: e.target.value })}
-                                    required
                                 />
                             </div>
                             <div className="mb-3">
                                 <label htmlFor="marca" className="form-label">Marca del producto</label>
                                 <InputText
                                     id="marca"
-                                    name="marca" // Asegúrate de agregar el atributo name
                                     className="w-full"
                                     value={producto.marca}
                                     onChange={(e) => setProducto({ ...producto, marca: e.target.value })}
-                                    required
                                 />
                             </div>
-                            <div className='mb-3'>
-                                <label htmlFor="imagen" className="form-label">Selecciona una imagen</label>
+                            <div className="mb-3">
+                                <label htmlFor="miniatura" className="form-label pb-2">Selecciona imágenes</label>
                                 <input
+                                    className="form-control"
                                     type="file"
-                                    id="imagen"
+                                    id="miniatura"
                                     accept="image/*"
-                                    onChange={(e) => {
-                                        if (e.target.files.length > 0) {
-                                            setFile(e.target.files[0]); // Establecer el archivo seleccionado en el estado
-                                            toast.current.show({ severity: 'info', summary: 'Éxito', detail: 'Archivo cargado correctamente.' });
-                                        }
-                                    }}
+                                    onChange={(e) => setImagen(e.target.files[0])} // Almacenar solo un archivo
                                     required
                                 />
                             </div>
 
-                            {/* Botón para agregar producto */}
-                            <Button type="submit" label="Agregar Producto" className='p-button-success' />
 
                         </form>
                     </Dialog>
-
                     <Dialog header="Confirmar Eliminación" visible={confirmDeleteVisible} footer={
                         <div>
                             <Button label="No" icon="pi pi-times" onClick={() => setConfirmDeleteVisible(false)} />
